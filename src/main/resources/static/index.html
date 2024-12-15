@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <title>Anket Toplama Merkezi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+
+<!-- Sayfa Başlığı -->
+<div class="text-center py-6 bg-blue-600 text-white shadow-lg">
+    <h1 class="text-3xl font-bold">Anket Toplama Merkezi</h1>
+    <p class="text-lg">Lütfen doldurmak istediğiniz anketi seçin:</p>
+</div>
+
+<!-- Anket Seçim Butonları -->
+<div class="flex justify-center my-6 gap-4">
+    <button onclick="showFutbolForm()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow">
+        Tuttuğunuz Futbol Takımı Anketi
+    </button>
+    <button onclick="showMemnuniyetForm()" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow">
+        Hayatınızdan Memnun musunuz? Anketi
+    </button>
+</div>
+
+<!-- Form Container -->
+<div id="formContainer" class="max-w-3xl mx-auto p-6 bg-white rounded shadow-lg"></div>
+
+<!-- Kırmızlı Anketler -->
+<h2 class="text-2xl font-semibold text-center mt-8">Kayıtlı Anketler</h2>
+<div id="surveyList" class="max-w-4xl mx-auto my-6 bg-white rounded shadow-lg p-4"></div>
+
+<!-- İstatistikler -->
+<h2 class="text-2xl font-semibold text-center mt-8">İstatistikler</h2>
+<div id="stats" class="max-w-4xl mx-auto my-6 bg-white rounded shadow-lg p-4"></div>
+
+<script>
+    function showFutbolForm() {
+        document.getElementById("formContainer").innerHTML = `
+        <h3 class="text-xl font-bold mb-4">Futbol Takımı Anketi</h3>
+        <form id="futbolForm" class="grid grid-cols-2 gap-4">
+            <input type="hidden" name="surveyType" value="1" />
+            <label>Katılımcı Adı:
+                <input class="border p-2 rounded w-full" type="text" name="participantName" required>
+            </label>
+            <label>Katılımcı Soyadı:
+                <input class="border p-2 rounded w-full" type="text" name="participantSurname" required>
+            </label>
+            <label>Cinsiyet:
+                <select name="gender" class="border p-2 rounded w-full" required>
+                    <option value="" disabled selected>Cinsiyet Seçin</option>
+                    <option value="0">Erkek</option>
+                    <option value="1">Kadın</option>
+                    <option value="2">Diğer</option>
+                </select>
+            </label>
+            <label>Doğum Tarihi:
+                <input class="border p-2 rounded w-full" type="date" name="birthDate" required>
+            </label>
+            <label>Tuttuğu Takım:
+                <input class="border p-2 rounded w-full" type="text" name="team" required>
+            </label>
+            <label>Açıklama:
+                <textarea class="border p-2 rounded w-full" name="description"></textarea>
+            </label>
+            <div class="col-span-2 text-center">
+                <button type="button" onclick="submitFutbolForm()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    Kaydet
+                </button>
+            </div>
+        </form>`;
+    }
+
+
+
+    function showMemnuniyetForm() {
+        document.getElementById("formContainer").innerHTML = `
+        <h3 class="text-xl font-bold mb-4">Hayatınızdan Memnun musunuz? Anketi</h3>
+        <form id="memnuniyetForm" class="grid grid-cols-2 gap-4">
+            <input type="hidden" name="surveyType" value="2" />
+            <label>Katılımcı Adı: <input class="border p-2 rounded w-full" type="text" name="participantName" required></label>
+            <label>Mutluluk Oranı (1-10): <input class="border p-2 rounded w-full" type="number" name="happinessScore" min="1" max="10" required></label>
+            <label>Sizi mutlu eden şeyler: <textarea class="border p-2 rounded w-full" name="happyThings"></textarea></label>
+            <label>Sizi mutsuz eden şeyler: <textarea class="border p-2 rounded w-full" name="unhappyThings"></textarea></label>
+            <div class="col-span-2 text-center">
+                <button type="button" onclick="submitMemnuniyetForm()" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                    Kaydet
+                </button>
+            </div>
+        </form>`;
+    }
+
+    function submitFutbolForm() {
+        const form = document.getElementById("futbolForm");
+        const formData = new FormData(form);
+        const jsonData = Object.fromEntries(formData.entries());
+        fetch('http://localhost:8080/api/surveys', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(jsonData)
+        })
+            .then(res => res.json())
+            .then(() => {
+                alert("Futbol anketi kaydedildi!");
+                listSurveys();
+            });
+    }
+
+    function submitMemnuniyetForm() {
+        const form = document.getElementById("memnuniyetForm");
+        const formData = new FormData(form);
+        const jsonData = Object.fromEntries(formData.entries());
+        fetch('http://localhost:8080/api/surveys', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(jsonData)
+        })
+            .then(res => res.json())
+            .then(() => {
+                alert("Memnuniyet anketi kaydedildi!");
+                listSurveys();
+            });
+    }
+
+    function listSurveys() {
+        fetch('http://localhost:8080/api/surveys')
+            .then(res => res.json())
+            .then(surveys => {
+                let html = `
+                <table class="table-auto w-full border-collapse bg-white shadow-md rounded-lg">
+                    <thead>
+                        <tr class="bg-gray-200 text-gray-700 text-left">
+                            <th class="px-4 py-2 border">ID</th>
+                            <th class="px-4 py-2 border">Ad</th>
+                            <th class="px-4 py-2 border">Soyad</th>
+                            <th class="px-4 py-2 border">Tip</th>
+                            <th class="px-4 py-2 border">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+                surveys.forEach(s => {
+                    html += `
+                    <tr class="hover:bg-gray-100">
+                        <td class="px-4 py-2 border">${s.id}</td>
+                        <td class="px-4 py-2 border">${s.participantName}</td>
+                        <td class="px-4 py-2 border">${s.participantSurname}</td>
+                        <td class="px-4 py-2 border">${s.surveyType || '-'}</td>
+                        <td class="px-4 py-2 border text-red-500">
+                            <button onclick="deleteSurvey(${s.id})" class="hover:underline">Sil</button>
+                        </td>
+                    </tr>
+                `;
+                });
+
+                html += `
+                    </tbody>
+                </table>
+            `;
+
+                document.getElementById("surveyList").innerHTML = html;
+            });
+    }
+
+    function loadStats() {
+        fetch('http://localhost:8080/api/surveys/stats/happiness')
+            .then(res => res.text())
+            .then(hap => {
+                fetch('http://localhost:8080/api/surveys/stats/teams')
+                    .then(res => res.json())
+                    .then(teams => {
+                        let teamStats = Object.entries(teams)
+                            .map(([team, percentage]) => `<li>${team}: %${percentage.toFixed(2)}</li>`)
+                            .join("");
+
+                        let html = `
+                        <div class="p-4 bg-white shadow rounded">
+                            <p class="text-lg font-bold">Ortalama Mutluluk Oranı: ${hap}</p>
+                            <p class="text-lg font-bold mt-2">Takım Yüzdeleri:</p>
+                            <ul class="list-disc pl-6">
+                                ${teamStats || "<li>Veri Yok</li>"}
+                            </ul>
+                        </div>
+                    `;
+
+                        document.getElementById("stats").innerHTML = html;
+                    });
+            })
+            .catch(err => {
+                console.error("İstatistik yüklenirken hata oluştu:", err);
+                document.getElementById("stats").innerHTML = "<p>İstatistikler yüklenemedi.</p>";
+            });
+    }
+
+
+
+    function deleteSurvey(id) {
+        fetch(`http://localhost:8080/api/surveys/${id}`, { method: 'DELETE' })
+            .then(() => {
+                alert("Anket silindi!");
+                listSurveys();
+            });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        listSurveys();
+        loadStats();
+    });
+</script>
+</body>
+</html>
